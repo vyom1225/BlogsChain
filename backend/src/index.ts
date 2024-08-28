@@ -1,17 +1,48 @@
 import { Hono } from 'hono'
 import { PrismaClient } from '@prisma/client/edge'
 import { withAccelerate } from '@prisma/extension-accelerate'
-import * as dotenv from 'dotenv'
+import {sign,verify,decode} from 'hono/jwt'
 
-const prisma = new PrismaClient({
-    datasourceUrl: process.env.DATABASE_URL,
-}).$extends(withAccelerate())
+const app = new Hono<{
+    Bindings:{
+        DATABASE_URL : string,
+        JWT_SECRET : string,
+    }
+}>();
 
-const app = new Hono()
+app.post("/api/v1/signup" , async (c) => {
 
-app.post("/api/v1/signup" , (c) => {
-  return c.text("you have signed up")
+    const prisma = new PrismaClient({datasourceUrl: c.env.DATABASE_URL})
+    .$extends(withAccelerate())
+
+    const body = await c.req.json()
+
+    const user = await prisma.user.create({
+        data : {
+            user_name : body.username,
+            email : body.email,
+            password : body.password,
+        }
+    })
+
+    const payload = {
+        ID : user.id,
+        exp : Math.floor(Date.now()/(1000*60)) + 1440, 
+    }
+
+    const secret = c.env.JWT_SECRET;
+
+    const token = await sign(payload , secret)
+
+    return c.json({
+        jwt : token,
+    })
 });
+
+app.get("/" , (c) => {
+    return c.text("BlogsChain Backend Server");
+})
+
 app.post("api/v1/signin" , (c) => {
     return c.text("you are now signed in")
 });
