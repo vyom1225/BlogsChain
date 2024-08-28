@@ -10,6 +10,27 @@ const app = new Hono<{
     }
 }>();
 
+//Middleware for protected routes
+app.use("/api/v1/blogs/*" , async (c,next) => {
+
+    let token = c.req.header("authorization");
+    
+    if(!token){
+        c.status(403);
+        return c.json({error : "You are not Authorized"});
+    }
+
+    token = token.split(" ")[1];
+
+    const payload = await verify(token , c.env.JWT_SECRET)
+
+    if(!payload){
+        c.status(403);
+        return c.json({error : "You are not Authorized"});
+    }
+
+    await next()
+})
 app.post("/api/v1/signup" , async (c) => {
 
     const prisma = new PrismaClient({datasourceUrl: c.env.DATABASE_URL})
@@ -68,6 +89,8 @@ app.post("api/v1/signin" , async (c) => {
         jwt : token
     })
 });
+
+
 app.post("api/v1/blogs" , (c) => {
     return c.text("Successfully uploaded the blogs")
 })
