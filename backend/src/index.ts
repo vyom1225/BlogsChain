@@ -39,12 +39,34 @@ app.post("/api/v1/signup" , async (c) => {
     })
 });
 
-app.get("/" , (c) => {
-    return c.text("BlogsChain Backend Server");
-})
+app.post("api/v1/signin" , async (c) => {
 
-app.post("api/v1/signin" , (c) => {
-    return c.text("you are now signed in")
+    const prisma = new PrismaClient({
+        datasourceUrl : c.env.DATABASE_URL
+    }).$extends(withAccelerate());
+
+    const body = await c.req.json();
+
+    const user = await prisma.user.findUnique({
+        where : {
+            email : body.email
+        }
+    })
+
+    if(!user){
+        c.status(403);
+        return c.text("NO such user exists");
+    }
+
+    if(body.password != user.password){
+        return c.text("Wrong Password");
+    }
+
+    const token = await sign({id : user.id} , c.env.JWT_SECRET);
+
+    return c.json({
+        jwt : token
+    })
 });
 app.post("api/v1/blogs" , (c) => {
     return c.text("Successfully uploaded the blogs")
