@@ -9,7 +9,7 @@ export async function authentication (c : Context , next : Next){
         c.status(403);
         return c.json({error : "You are not Authorized"});
     }
-
+    
     token = token.split(" ")[1];
 
     const payload= await verify(token , c.env.JWT_SECRET)

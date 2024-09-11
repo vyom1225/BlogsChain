@@ -23,7 +23,6 @@ blogRouter.post("/" , async (c) => {
     const prisma = new PrismaClient({
         datasourceUrl : c.env.DATABASE_URL
     }).$extends(withAccelerate())
-    console.log("yeh")
 
     const body = await c.req.json();
 
@@ -61,7 +60,6 @@ blogRouter.put("/" ,async (c) => {
          blog = await prisma.blog.update({
             where : {
                 id : body.blogID,
-                authorID : c.get("userID")
             },
             data : {
                 title : body.title,
