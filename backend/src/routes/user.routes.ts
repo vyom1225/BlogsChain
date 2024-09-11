@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { PrismaClient } from '@prisma/client/edge'
 import { withAccelerate } from '@prisma/extension-accelerate'
 import {sign,verify,decode} from 'hono/jwt'
+import { signinInput , signupInput } from '@vyom1225/blogschain-common'
 
 async function hashPassword(password : string){
 
@@ -34,6 +35,14 @@ userRouter.post("/signup" , async (c) => {
 
     const body = await c.req.json()
 
+    const {success} = signupInput.safeParse(body);
+    if(!success){
+        c.status(422)
+        return c.json({
+            msg : "Wrong input provided"
+        })
+    }
+
     let hashedPassword = await hashPassword(body.password);
 
     const user = await prisma.user.create({
@@ -58,6 +67,14 @@ userRouter.post("/signin" , async (c) => {
     }).$extends(withAccelerate());
 
     const body = await c.req.json();
+    const {success} = signinInput.safeParse(body)
+
+    if(!success){
+        c.status(422)
+        return c.json({
+            msg : "Wrong input provided"
+        })
+    }
 
     const user = await prisma.user.findUnique({
         where : {
